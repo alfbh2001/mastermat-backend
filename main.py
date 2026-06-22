@@ -43,8 +43,8 @@ def obter_dados_do_banco():
 def estruturar_linhas_em_arvore(linhas, pai_id=None):
     arvore = []
     
-    # Filtra os filhos garantindo que o id_pai trate UUIDs ou textos perfeitamente
-    filhos = [linha for line in linhas if (line["id_pai"] == pai_id or str(line["id_pai"]) == str(pai_id))]
+    # CORRIGIDO: Agora todas as variáveis internas usam 'linha'
+    filhos = [linha for linha in linhas if (linha["id_pai"] == pai_id or str(linha["id_pai"]) == str(pai_id))]
     
     # Ordena tratando possíveis valores None na coluna ordem
     filhos.sort(key=lambda x: x["ordem"] if x["ordem"] is not None else 0)
