@@ -22,15 +22,15 @@ def obter_dados_do_banco():
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     query = """
     WITH RECURSIVE menu_arvore AS (
-        SELECT id_menu, ordem, id_pai, descricao, nivel, ARRAY[ordem] AS caminho
+        SELECT id_menu, id_pai, descricao,  ARRAY[funcao] AS caminho
         FROM mm_menu
         WHERE id_pai IS NULL
         UNION ALL
-        SELECT m.id_menu, m.ordem, m.id_pai, m.descricao, m.nivel, p.caminho || m.ordem
+        SELECT m.id_menu, m.id_pai, m.descricao,  p.caminho 
         FROM mm_menu m
         INNER JOIN menu_arvore p ON m.id_pai = p.id_menu
     )
-    SELECT id_menu, id_pai, descricao, nivel FROM menu_arvore ORDER BY caminho;
+    SELECT id_menu, id_pai, descricao, caminho FROM menu_arvore ORDER BY caminho;
     """
     cursor.execute(query)
     resultados = cursor.fetchall()
@@ -45,7 +45,7 @@ def estruturar_linhas_em_arvore(linhas, pai_id=None):
     for child in filhos:
         node = {
             "descricao": child["descricao"],
-            "nivel": child["nivel"],
+            "caminho": child["nivel"],
             "submenus": estruturar_linhas_em_arvore(linhas, child["id_menu"])
         }
         arvore.append(node)
