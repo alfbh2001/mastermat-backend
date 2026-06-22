@@ -14,7 +14,7 @@ app.add_middleware(
 )
 
 # ⚠️ Sua String de Conexão do Neon (Mantenha a sua aqui)
-DATABASE_URL = "postgresql://usuario:senha@seu-servidor.neon.tech/neondb?sslmode=require"
+DATABASE_URL = "postgresql://neondb_owner:npg_8Sh0tXnixrcv@ep-sparkling-poetry-ac0ocu3z-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
 def obter_dados_do_banco():
     conn = psycopg2.connect(DATABASE_URL)
