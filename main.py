@@ -20,14 +20,14 @@ def obter_dados_do_banco():
     conn = psycopg2.connect(DATABASE_URL)
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    # Query ajustada para trazer os campos oficiais e ordenar por 'ordem' dentro da hierarquia
+    # Adicionamos COALESCE(ordem, 0) para evitar que valores nulos quebrem a árvore do Postgres
     query = """
     WITH RECURSIVE menu_arvore AS (
-        SELECT id_menu, ordem, id_pai, descricao, funcao, ARRAY[ordem] AS caminho
+        SELECT id_menu, ordem, id_pai, descricao, funcao, ARRAY[COALESCE(ordem, 0)] AS caminho
         FROM mm_menu
         WHERE id_pai IS NULL
         UNION ALL
-        SELECT m.id_menu, m.ordem, m.id_pai, m.descricao, m.funcao, p.caminho || m.ordem
+        SELECT m.id_menu, m.ordem, m.id_pai, m.descricao, m.funcao, p.caminho || COALESCE(m.ordem, 0)
         FROM mm_menu m
         INNER JOIN menu_arvore p ON m.id_pai = p.id_menu
     )
@@ -43,17 +43,18 @@ def obter_dados_do_banco():
 def estruturar_linhas_em_arvore(linhas, pai_id=None):
     arvore = []
     
-    # Filtra os filhos do nó atual e garante que fiquem estritamente ordenados pela coluna 'ordem'
-    filhos = [linha for linha in linhas if linha["id_pai"] == pai_id]
+    # Filtra os filhos garantindo que o id_pai trate UUIDs ou textos perfeitamente
+    filhos = [linha for line in linhas if (line["id_pai"] == pai_id or str(line["id_pai"]) == str(pai_id))]
+    
+    # Ordena tratando possíveis valores None na coluna ordem
     filhos.sort(key=lambda x: x["ordem"] if x["ordem"] is not None else 0)
     
     for filho in filhos:
-        # Monta o nó incluindo o novo campo 'funcao'
         node = {
-            "id_menu": filho["id_menu"],
+            "id_menu": str(filho["id_menu"]),
             "descricao": filho["descricao"],
-            "funcao": filho["funcao"], # Nome da tela que o JS irá disparar
-            "submenus": estruturar_linhas_em_arvore(linhas, filho["id_menu"]) # Disparo recursivo
+            "funcao": filho["funcao"] if filho["funcao"] is not None else "",
+            "submenus": estruturar_linhas_em_arvore(linhas, filho["id_menu"])
         }
         arvore.append(node)
         
