@@ -40,7 +40,8 @@ def obter_dados_do_banco():
 
 def estruturar_linhas_em_arvore(linhas, pai_id=None):
     arvore = []
-    filhos = [linha for linha in lines if linha["id_pai"] == pai_id]
+    # CORRIGIDO: mudado de 'lines' para 'linhas'
+    filhos = [linha for linha in linhas if linha["id_pai"] == pai_id] 
     for child in filhos:
         node = {
             "descricao": child["descricao"],
