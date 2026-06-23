@@ -5,7 +5,7 @@ from psycopg2.extras import RealDictCursor
 # Criamos o roteador do menu
 router = APIRouter(prefix="/api/menu", tags=["Menu"])
 
-DATABASE_URL = "SUA_URL_DO_NEON_AQUI"
+DATABASE_URL = "postgresql://neondb_owner:npg_8Sh0tXnixrcv@ep-sparkling-poetry-ac0ocu3z-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
 def obter_dados_do_banco():
     conn = psycopg2.connect(DATABASE_URL)
