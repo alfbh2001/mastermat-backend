@@ -16,7 +16,7 @@ app.add_middleware(
 )
 
 # ⚠️ COLE A SUA STRING DE CONEXÃO DO NEON AQUI
-DATABASE_URL = "postgresql://usuario:senha@seu-servidor.neon.tech/neondb?sslmode=require"
+DATABASE_URL = "postgresql://neondb_owner:npg_8Sh0tXnixrcv@ep-sparkling-poetry-ac0ocu3z-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
 # Modelo de validação para o Cadastro de Unidades
 class UnidadeSchema(BaseModel):
