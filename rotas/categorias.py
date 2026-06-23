@@ -4,7 +4,7 @@ from typing import Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-router = APIRouter(prefix="/api/categorias", tags=["mm_categoria"])
+router = APIRouter(prefix="/api/categorias", tags=["Categorias"])
 
 DATABASE_URL = "postgresql://neondb_owner:npg_8Sh0tXnixrcv@ep-sparkling-poetry-ac0ocu3z-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
