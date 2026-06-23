@@ -1,7 +1,7 @@
 # main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from rotas import menu, unidades # Importa os módulos isolados
+from rotas import menu, unidades, categorias # Importa os módulos isolados
 
 app = FastAPI(title="MasterMat API")
 
