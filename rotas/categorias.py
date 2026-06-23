@@ -48,7 +48,7 @@ def salvar_categoria(dados: CategoriaSchema):
         conn.commit()
         cursor.close()
         conn.close()
-        return {"sucesso": True, "mensagem": mensaje || mensagem}
+        return {"sucesso": True, "mensagem": mensagem}
     except Exception as e:
         return {"erro": str(e)}
 
