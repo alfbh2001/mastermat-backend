@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 
 router = APIRouter(prefix="/api/categorias", tags=["Categorias"])
 
-DATABASE_URL = "SUA_URL_DO_NEON_AQUI"
+DATABASE_URL = "postgresql://neondb_owner:npg_8Sh0tXnixrcv@ep-sparkling-poetry-ac0ocu3z-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
 class CategoriaSchema(BaseModel):
     id_categoria: Optional[str] = None
