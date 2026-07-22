@@ -15,17 +15,17 @@ def get_db_connection():
         raise Exception("Variável DATABASE_URL não configurada no ambiente.")
     return psycopg2.connect(DATABASE_URL)
 
-# Modelo de dados permissivo para o FastAPI não barrar no erro 422
+# Modelo de dados permissivo
 class MaterialSchema(BaseModel):
     id_material: Optional[Any] = None
     cod_material: Optional[Any] = ""
     desc_simples: Optional[Any] = ""
-    desc_material: Optional[Any] = None  # Suporta se o frontend enviar desc_material
+    desc_material: Optional[Any] = None
     desc_completa: Optional[Any] = ""
     unidade: Optional[Any] = ""
-    cod_unidade: Optional[Any] = None    # Suporta se o frontend enviar cod_unidade
+    cod_unidade: Optional[Any] = None
     categoria: Optional[Any] = ""
-    cod_categoria: Optional[Any] = None  # Suporta se o frontend enviar cod_categoria
+    cod_categoria: Optional[Any] = None
     qt_minimo: Optional[Any] = 0
     percent_seguranca: Optional[Any] = 0
     data_movto: Optional[Any] = None
@@ -52,7 +52,7 @@ def salvar_material(mat: MaterialSchema):
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Unifica aliases de campos se o frontend enviar nomes alternativos
+        # Unifica aliases de campos caso o frontend envie nomes alternativos
         descricao = str(mat.desc_simples or mat.desc_material or "")
         uni = str(mat.unidade or mat.cod_unidade or "")
         cat = str(mat.categoria or mat.cod_categoria or "")
@@ -83,22 +83,38 @@ def salvar_material(mat: MaterialSchema):
                 uni, cat, qt_min, perc_seg, int(mat.id_material)
             )
         else:
-            # INSERT (Inclusão)
-            sql = """
-                INSERT INTO materiais 
-                (cod_material, desc_simples, desc_completa, unidade, categoria, qt_minimo, percent_seguranca)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """
-            params = (
-                str(mat.cod_material or ""), descricao, str(mat.desc_completa or ""),
-                uni, cat, qt_min, perc_seg
-            )
+            # INSERT (Inclusão) - Tenta primeiro com os campos padrão
+            try:
+                sql = """
+                    INSERT INTO materiais 
+                    (cod_material, desc_simples, desc_completa, unidade, categoria, qt_minimo, percent_seguranca)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """
+                params = (
+                    str(mat.cod_material or ""), descricao, str(mat.desc_completa or ""),
+                    uni, cat, qt_min, perc_seg
+                )
+                cursor.execute(sql, params)
+            except Exception as insert_err:
+                conn.rollback() # Limpa a transação com erro
+                
+                # Segunda tentativa: Tenta incluir data_movto e usuario caso o banco exija
+                sql_alt = """
+                    INSERT INTO materiais 
+                    (cod_material, desc_simples, desc_completa, cod_unidade, cod_categoria, qt_minimo, percent_seguranca, data_movto, usuario)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                params_alt = (
+                    str(mat.cod_material or ""), descricao, str(mat.desc_completa or ""),
+                    uni, cat, qt_min, perc_seg, dt_mov, usr
+                )
+                cursor.execute(sql_alt, params_alt)
 
-        cursor.execute(sql, params)
         conn.commit()
         cursor.close()
         conn.close()
         return {"sucesso": True, "mensagem": "Material salvo com sucesso!"}
     except Exception as e:
         print("ERRO NO BANCO DE DADOS:", str(e))
-        raise HTTPException(status_code=500, detail=f"Erro ao salvar material: {str(e)}")
+        # Retorna o motivo exato do banco de dados na resposta para identificarmos na hora
+        raise HTTPException(status_code=500, detail=f"Erro no banco: {str(e)}")
