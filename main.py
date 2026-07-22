@@ -12,7 +12,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# A MÁGICA: O main apenas "conecta" as rotas isoladas
+# A MÁGICA: O main apenas "conecta" as rotas isoladas  
 app.include_router(menu.router)
 app.include_router(unidades.router)
 app.include_router(categorias.router)
