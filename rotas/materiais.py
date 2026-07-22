@@ -1,11 +1,22 @@
+import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from database import get_db_connection # Certifique-se que o nome da sua importação de banco está correto
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
+# Roteador de Materiais
 router = APIRouter(prefix="/api/materiais", tags=["Materiais"])
 
-# Modelo de dados que o frontend envia
+# Função auxiliar para conectar ao banco de dados no Render
+def get_db_connection():
+    # Pega a URL do banco das variáveis de ambiente do Render (ex: DATABASE_URL)
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    if not DATABASE_URL:
+        raise Exception("Variável DATABASE_URL não configurada no ambiente.")
+    return psycopg2.connect(DATABASE_URL)
+
+# Modelo de dados enviado pelo frontend no salvamento
 class MaterialSchema(BaseModel):
     id_material: Optional[int] = None
     cod_material: str
@@ -13,26 +24,24 @@ class MaterialSchema(BaseModel):
     desc_completa: Optional[str] = ""
     cod_unidade: str
     cod_categoria: str
-    qt_minimo: float = 0
-    percent_seguranca: float = 0
-    data_movto: Optional[str] = None
-    usuario: Optional[str] = None
+    qt_minimo: Optional[float] = 0
+    percent_seguranca: Optional[float] = 0
 
 # 1. ROTA GET: Busca lista de materiais
 @router.get("")
 def listar_materiais():
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True) # ou DictCursor dependendo do seu driver
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute("SELECT * FROM materiais ORDER BY desc_material")
         dados = cursor.fetchall()
         cursor.close()
         conn.close()
         return dados
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar materiais: {str(e)}")
 
-# 2. ROTA POST: Insere ou Atualiza Material (A que estava dando 404!)
+# 2. ROTA POST: Insere ou Atualiza Material
 @router.post("")
 def salvar_material(mat: MaterialSchema):
     try:
@@ -40,19 +49,23 @@ def salvar_material(mat: MaterialSchema):
         cursor = conn.cursor()
 
         if mat.id_material:
-            # UPDATE (Edição)
+            # UPDATE (Atualização)
             sql = """
                 UPDATE materiais 
-                SET cod_material=%s, desc_material=%s, desc_completa=%s, 
-                    cod_unidade=%s, cod_categoria=%s, qt_minimo=%s, percent_seguranca=%s
-                WHERE id_material=%s
+                SET cod_material = %s, 
+                    desc_material = %s, 
+                    desc_completa = %s, 
+                    cod_unidade = %s, 
+                    cod_categoria = %s, 
+                    qt_minimo = %s, 
+                    percent_seguranca = %s
+                WHERE id_material = %s
             """
             params = (
                 mat.cod_material, mat.desc_material, mat.desc_completa,
                 mat.cod_unidade, mat.cod_categoria, mat.qt_minimo, 
                 mat.percent_seguranca, mat.id_material
             )
-            cursor.execute(sql, params)
         else:
             # INSERT (Inclusão)
             sql = """
@@ -64,11 +77,11 @@ def salvar_material(mat: MaterialSchema):
                 mat.cod_material, mat.desc_material, mat.desc_completa,
                 mat.cod_unidade, mat.cod_categoria, mat.qt_minimo, mat.percent_seguranca
             )
-            cursor.execute(sql, params)
 
+        cursor.execute(sql, params)
         conn.commit()
         cursor.close()
         conn.close()
         return {"sucesso": True, "mensagem": "Material salvo com sucesso!"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Erro ao salvar material: {str(e)}")
