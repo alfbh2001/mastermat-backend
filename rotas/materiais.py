@@ -20,10 +20,10 @@ def get_db_connection():
 class MaterialSchema(BaseModel):
     id_material: Optional[int] = None
     cod_material: str
-    desc_material: str
+    desc_simples: str
     desc_completa: Optional[str] = ""
-    cod_unidade: str
-    cod_categoria: str
+    unidade: str
+    categoria: str
     qt_minimo: Optional[float] = 0
     percent_seguranca: Optional[float] = 0
 
@@ -53,29 +53,29 @@ def salvar_material(mat: MaterialSchema):
             sql = """
                 UPDATE materiais 
                 SET cod_material = %s, 
-                    desc_material = %s, 
+                    desc_simples = %s, 
                     desc_completa = %s, 
-                    cod_unidade = %s, 
-                    cod_categoria = %s, 
+                    unidade = %s, 
+                    categoria = %s, 
                     qt_minimo = %s, 
                     percent_seguranca = %s
                 WHERE id_material = %s
             """
             params = (
-                mat.cod_material, mat.desc_material, mat.desc_completa,
-                mat.cod_unidade, mat.cod_categoria, mat.qt_minimo, 
+                mat.cod_material, mat.desc_simples, mat.desc_completa,
+                mat.unidade, mat.categoria, mat.qt_minimo, 
                 mat.percent_seguranca, mat.id_material
             )
         else:
             # INSERT (Inclusão)
             sql = """
                 INSERT INTO materiais 
-                (cod_material, desc_material, desc_completa, cod_unidade, cod_categoria, qt_minimo, percent_seguranca)
+                (cod_material, desc_simples, desc_completa, unidade, categoria, qt_minimo, percent_seguranca)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
             params = (
-                mat.cod_material, mat.desc_material, mat.desc_completa,
-                mat.cod_unidade, mat.cod_categoria, mat.qt_minimo, mat.percent_seguranca
+                mat.cod_material, mat.desc_simples, mat.desc_completa,
+                mat.unidade, mat.categoria, mat.qt_minimo, mat.percent_seguranca
             )
 
         cursor.execute(sql, params)
