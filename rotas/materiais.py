@@ -1,13 +1,13 @@
-from fastapi import APIRouter, HTTPException
+ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-# Criamos o roteador dos materiais
+# Roteador dos materiais
 router = APIRouter(prefix="/api/materiais", tags=["Materiais"])
 
-# URL direta de conexão com o banco Neon (igual ao unidades.py)
+# URL direta de conexão com o banco Neon
 DATABASE_URL = "postgresql://neondb_owner:npg_8Sh0tXnixrcv@ep-sparkling-poetry-ac0ocu3z-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
 def get_db_connection():
@@ -50,7 +50,7 @@ def salvar_material(mat: MaterialSchema):
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Mapeia aliases enviados pelo frontend para os nomes reais da tabela mm_material
+        # Mapeia aliases do frontend para os nomes reais do banco
         cod_mat = str(mat.cod_material or "")
         desc = str(mat.desc_simples or mat.desc_material or "")
         desc_comp = str(mat.desc_completa or "")
@@ -58,17 +58,17 @@ def salvar_material(mat: MaterialSchema):
         cat = str(mat.categoria or mat.cod_categoria or "")
         usr = str(mat.usuario) if mat.usuario is not None else None
         
-        # Formata data_movto caso venha como YYYYMMDD do frontend
+        # Formata data_movto caso venha como YYYYMMDD
         dt_mov = str(mat.data_movto) if mat.data_movto else None
         if dt_mov and len(dt_mov) == 8 and dt_mov.isdigit():
             dt_mov = f"{dt_mov[0:4]}-{dt_mov[4:6]}-{dt_mov[6:8]}"
 
-        # Trata os números
+        # Trata os números sem divisão
         qt_min = float(mat.qt_minimo) if mat.qt_minimo not in (None, "") else 0.0
         perc_seg = float(mat.percent_seguranca) if mat.percent_seguranca not in (None, "") else 0.0
 
         if mat.id_material:
-            # UPDATE na tabela mm_material
+            # UPDATE
             sql = """
                 UPDATE mm_material 
                 SET cod_material = %s, 
@@ -87,7 +87,7 @@ def salvar_material(mat: MaterialSchema):
                 usr, dt_mov, qt_min, perc_seg, int(mat.id_material)
             )
         else:
-            # INSERT na tabela mm_material
+            # INSERT
             sql = """
                 INSERT INTO mm_material 
                 (cod_material, desc_simples, desc_completa, unidade, categoria, usuario, data_movto, qt_minimo, percent_seguranca)
