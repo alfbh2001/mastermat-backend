@@ -1,7 +1,7 @@
 import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -10,22 +10,26 @@ router = APIRouter(prefix="/api/materiais", tags=["Materiais"])
 
 # Função auxiliar para conectar ao banco de dados no Render
 def get_db_connection():
-    # Pega a URL do banco das variáveis de ambiente do Render (ex: DATABASE_URL)
     DATABASE_URL = os.getenv("DATABASE_URL")
     if not DATABASE_URL:
         raise Exception("Variável DATABASE_URL não configurada no ambiente.")
     return psycopg2.connect(DATABASE_URL)
 
-# Modelo de dados enviado pelo frontend no salvamento
+# Modelo de dados permissivo para o FastAPI não barrar no erro 422
 class MaterialSchema(BaseModel):
-    id_material: Optional[int] = None
-    cod_material: str
-    desc_simples: str
-    desc_completa: Optional[str] = ""
-    unidade: str
-    categoria: str
-    qt_minimo: Optional[float] = 0
-    percent_seguranca: Optional[float] = 0
+    id_material: Optional[Any] = None
+    cod_material: Optional[Any] = ""
+    desc_simples: Optional[Any] = ""
+    desc_material: Optional[Any] = None  # Suporta se o frontend enviar desc_material
+    desc_completa: Optional[Any] = ""
+    unidade: Optional[Any] = ""
+    cod_unidade: Optional[Any] = None    # Suporta se o frontend enviar cod_unidade
+    categoria: Optional[Any] = ""
+    cod_categoria: Optional[Any] = None  # Suporta se o frontend enviar cod_categoria
+    qt_minimo: Optional[Any] = 0
+    percent_seguranca: Optional[Any] = 0
+    data_movto: Optional[Any] = None
+    usuario: Optional[Any] = None
 
 # 1. ROTA GET: Busca lista de materiais
 @router.get("")
@@ -33,7 +37,7 @@ def listar_materiais():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute("SELECT * FROM materiais ORDER BY desc_material")
+        cursor.execute("SELECT * FROM materiais ORDER BY desc_simples")
         dados = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -47,6 +51,19 @@ def salvar_material(mat: MaterialSchema):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
+
+        # Unifica aliases de campos se o frontend enviar nomes alternativos
+        descricao = str(mat.desc_simples or mat.desc_material or "")
+        uni = str(mat.unidade or mat.cod_unidade or "")
+        cat = str(mat.categoria or mat.cod_categoria or "")
+        
+        # Conversão segura para numéricos
+        qt_min = float(mat.qt_minimo) if mat.qt_minimo not in (None, "") else 0.0
+        perc_seg = float(mat.percent_seguranca) if mat.percent_seguranca not in (None, "") else 0.0
+        
+        # Conversão de nulos/strings
+        usr = str(mat.usuario) if mat.usuario is not None else None
+        dt_mov = str(mat.data_movto) if mat.data_movto is not None else None
 
         if mat.id_material:
             # UPDATE (Atualização)
@@ -62,9 +79,8 @@ def salvar_material(mat: MaterialSchema):
                 WHERE id_material = %s
             """
             params = (
-                mat.cod_material, mat.desc_simples, mat.desc_completa,
-                mat.unidade, mat.categoria, mat.qt_minimo, 
-                mat.percent_seguranca, mat.id_material
+                str(mat.cod_material or ""), descricao, str(mat.desc_completa or ""),
+                uni, cat, qt_min, perc_seg, int(mat.id_material)
             )
         else:
             # INSERT (Inclusão)
@@ -74,8 +90,8 @@ def salvar_material(mat: MaterialSchema):
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
             params = (
-                mat.cod_material, mat.desc_simples, mat.desc_completa,
-                mat.unidade, mat.categoria, mat.qt_minimo, mat.percent_seguranca
+                str(mat.cod_material or ""), descricao, str(mat.desc_completa or ""),
+                uni, cat, qt_min, perc_seg
             )
 
         cursor.execute(sql, params)
@@ -84,4 +100,5 @@ def salvar_material(mat: MaterialSchema):
         conn.close()
         return {"sucesso": True, "mensagem": "Material salvo com sucesso!"}
     except Exception as e:
+        print("ERRO NO BANCO DE DADOS:", str(e))
         raise HTTPException(status_code=500, detail=f"Erro ao salvar material: {str(e)}")
