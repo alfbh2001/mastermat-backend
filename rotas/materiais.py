@@ -1,19 +1,19 @@
-import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+# Criamos o roteador dos materiais
 router = APIRouter(prefix="/api/materiais", tags=["Materiais"])
 
+# URL direta de conexão com o banco Neon (igual ao unidades.py)
+DATABASE_URL = "postgresql://neondb_owner:npg_8Sh0tXnixrcv@ep-sparkling-poetry-ac0ocu3z-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+
 def get_db_connection():
-    # Tenta buscar DATABASE_URL ou variações comuns no Render
-    DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL") or os.getenv("DATABASE_PUBLIC_URL")
-    if not DATABASE_URL:
-        raise Exception("Variável DATABASE_URL não configurada no ambiente da Render.")
     return psycopg2.connect(DATABASE_URL)
 
+# Schema permissivo para aceitar nulls do frontend sem dar erro 422
 class MaterialSchema(BaseModel):
     id_material: Optional[Any] = None
     cod_material: Optional[Any] = ""
@@ -29,7 +29,7 @@ class MaterialSchema(BaseModel):
     data_movto: Optional[Any] = None
     usuario: Optional[Any] = None
 
-# 1. ROTA GET: Busca lista de materiais da tabela mm_material
+# 1. ROTA GET: Busca lista de materiais
 @router.get("")
 def listar_materiais():
     try:
@@ -50,7 +50,7 @@ def salvar_material(mat: MaterialSchema):
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Alinha os nomes enviados pelo frontend aos nomes das colunas
+        # Mapeia aliases enviados pelo frontend para os nomes reais da tabela mm_material
         cod_mat = str(mat.cod_material or "")
         desc = str(mat.desc_simples or mat.desc_material or "")
         desc_comp = str(mat.desc_completa or "")
@@ -58,12 +58,12 @@ def salvar_material(mat: MaterialSchema):
         cat = str(mat.categoria or mat.cod_categoria or "")
         usr = str(mat.usuario) if mat.usuario is not None else None
         
-        # Formata data_movto para YYYY-MM-DD caso venha no formato YYYYMMDD
+        # Formata data_movto caso venha como YYYYMMDD do frontend
         dt_mov = str(mat.data_movto) if mat.data_movto else None
         if dt_mov and len(dt_mov) == 8 and dt_mov.isdigit():
             dt_mov = f"{dt_mov[0:4]}-{dt_mov[4:6]}-{dt_mov[6:8]}"
 
-        # Trata os valores numéricos
+        # Trata os números
         qt_min = float(mat.qt_minimo) if mat.qt_minimo not in (None, "") else 0.0
         perc_seg = float(mat.percent_seguranca) if mat.percent_seguranca not in (None, "") else 0.0
 
