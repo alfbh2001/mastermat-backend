@@ -16,3 +16,4 @@ app.add_middleware(
 app.include_router(menu.router)
 app.include_router(unidades.router)
 app.include_router(categorias.router)
+app.include_router(materiais.router)
