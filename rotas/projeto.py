@@ -6,7 +6,7 @@ from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-router = APIRouter(prefix="/api/projetos", tags=["Projeto"])
+router = APIRouter(prefix="/api/projeto", tags=["Projeto"])
 
 # Recomendado: pegar via variável de ambiente, com fallback para a string original
 DATABASE_URL = os.getenv(
