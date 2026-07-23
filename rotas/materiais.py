@@ -118,7 +118,7 @@ def salvar_material(mat: MaterialSchema):
         raise HTTPException(status_code=500, detail=f"Erro no banco: {str(e)}")
 
 @router.delete("/{id_unidade}") # Mapeia para DELETE /api/unidades/{id_unidade}
-def deletar_unidade(id_material: str):
+def deletar_material(id_material: str):
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
