@@ -13,7 +13,7 @@ DATABASE_URL = "postgresql://neondb_owner:npg_8Sh0tXnixrcv@ep-sparkling-poetry-a
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL)
 
-# Schema permissivo para aceitar nulls do frontend sem dar erro 422
+# Schema permissivo
 class MaterialSchema(BaseModel):
     id_material: Optional[Any] = None
     cod_material: Optional[Any] = ""
@@ -29,7 +29,7 @@ class MaterialSchema(BaseModel):
     data_movto: Optional[Any] = None
     usuario: Optional[Any] = None
 
-# 1. ROTA GET: Busca lista de materiais
+# 1. ROTA GET: Busca lista de materiais formatada para o Grid do Frontend
 @router.get("")
 def listar_materiais():
     try:
@@ -39,11 +39,23 @@ def listar_materiais():
         dados = cursor.fetchall()
         cursor.close()
         conn.close()
-        return dados
+
+        # Formata o retorno para cobrir todos os nomes de campos que o Grid possa esperar
+        lista_formatada = []
+        for row in dados:
+            item = dict(row)
+            # Aliases para o Frontend/Grid
+            item["desc_material"] = row.get("desc_simples") or row.get("desc_material") or ""
+            item["cod_unidade"] = row.get("unidade") or row.get("cod_unidade") or ""
+            item["cod_categoria"] = row.get("categoria") or row.get("cod_categoria") or ""
+            lista_formatada.append(item)
+
+        return lista_formatada
     except Exception as e:
+        print("ERRO GET MATERIAIS:", str(e))
         raise HTTPException(status_code=500, detail=f"Erro ao buscar materiais: {str(e)}")
 
-# 2. ROTA POST: Insere ou Atualiza Material na tabela mm_material
+# 2. ROTA POST: Insere ou Atualiza Material
 @router.post("")
 def salvar_material(mat: MaterialSchema):
     try:
@@ -63,12 +75,11 @@ def salvar_material(mat: MaterialSchema):
         if dt_mov and len(dt_mov) == 8 and dt_mov.isdigit():
             dt_mov = f"{dt_mov[0:4]}-{dt_mov[4:6]}-{dt_mov[6:8]}"
 
-        # Trata os números sem divisão
+        # Trata os números
         qt_min = float(mat.qt_minimo) if mat.qt_minimo not in (None, "") else 0.0
         perc_seg = float(mat.percent_seguranca) if mat.percent_seguranca not in (None, "") else 0.0
 
         if mat.id_material:
-            # UPDATE
             sql = """
                 UPDATE mm_material 
                 SET cod_material = %s, 
@@ -87,7 +98,6 @@ def salvar_material(mat: MaterialSchema):
                 usr, dt_mov, qt_min, perc_seg, int(mat.id_material)
             )
         else:
-            # INSERT
             sql = """
                 INSERT INTO mm_material 
                 (cod_material, desc_simples, desc_completa, unidade, categoria, usuario, data_movto, qt_minimo, percent_seguranca)
